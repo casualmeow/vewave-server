@@ -2,9 +2,16 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-export const createDbClient = (databaseUrl: string) => {
+type DbClientOptions = {
+  max?: number;
+};
+
+export const createDbClient = (
+  databaseUrl: string,
+  options: DbClientOptions = {},
+) => {
   const client = postgres(databaseUrl, {
-    max: 10,
+    max: options.max ?? 10,
     prepare: false,
   });
   const db = drizzle(client, { schema });

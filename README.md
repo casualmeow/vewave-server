@@ -32,6 +32,8 @@ bun run dev
 
 By default the API listens on `http://localhost:3001`.
 
+For Docker or LAN access, set `API_HOST=0.0.0.0`. Local OpenAPI generation from the frontend expects the backend to be reachable at `http://localhost:3001`.
+
 ## API Docs
 
 OpenAPI docs are served at:
@@ -49,6 +51,7 @@ http://localhost:3001/openapi/json
 ## REST Endpoints
 
 - `GET /api/health`
+- `GET /api/health/db`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
@@ -93,3 +96,32 @@ VITE_API_URL=http://localhost:3001
 The canonical login contract is `email + password`. Existing frontend fields named `username` should be mapped to email or updated before integration.
 
 Room routes should use the public `room.code` value returned by `POST /api/rooms`, not the internal UUID.
+
+## Auth Local Verification
+
+1. Start PostgreSQL and confirm the `DATABASE_URL` in `.env` uses valid credentials.
+2. Run `bun run db:migrate`. If this fails with authentication or connection errors, fix `DATABASE_URL` before debugging the frontend.
+3. Start the backend with `bun run dev`.
+4. Verify `GET http://localhost:3001/api/health`.
+5. Verify DB readiness at `GET http://localhost:3001/api/health/db`; missing tables mean migrations have not been applied.
+6. Register a user with `POST /api/auth/register`.
+7. Login with the same email/password using `POST /api/auth/login`.
+8. Confirm the response contains `{ user, accessToken }` and the response sets the `vewave_refresh` HTTP-only cookie.
+
+## CORS And Cookies
+
+`CLIENT_ORIGIN` is a comma-separated exact allowlist. Local defaults are:
+
+```env
+CLIENT_ORIGIN=http://localhost:3000,http://localhost:5173
+```
+
+Credentialed browser requests cannot use `Access-Control-Allow-Origin: *`, so add each deployed frontend origin explicitly.
+
+Local HTTP development should use:
+
+```env
+COOKIE_SECURE=false
+```
+
+Cross-site production refresh cookies require HTTPS, `COOKIE_SECURE=true`, and an appropriate `COOKIE_DOMAIN` when sharing cookies across subdomains. Frontend HTTP clients must send credentials; the Vewave frontend Axios clients use `withCredentials: true`.

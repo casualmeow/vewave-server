@@ -1,8 +1,14 @@
 import { AppError, toErrorEnvelope } from "./app-error";
+import {
+  getErrorLogFields,
+  logger,
+  sanitizeRequestPath,
+} from "../logging/logger";
 
 type ElysiaErrorContext = {
   code: unknown;
   error: unknown;
+  request: Request;
   set: {
     status?: number | string;
   };
@@ -13,7 +19,12 @@ const getValidationMessage = (error: unknown) => {
   return "The request did not match the expected schema.";
 };
 
-export const handleHttpError = ({ code, error, set }: ElysiaErrorContext) => {
+export const handleHttpError = ({
+  code,
+  error,
+  request,
+  set,
+}: ElysiaErrorContext) => {
   if (error instanceof AppError) {
     set.status = error.statusCode;
     return toErrorEnvelope(error);
@@ -30,6 +41,13 @@ export const handleHttpError = ({ code, error, set }: ElysiaErrorContext) => {
       ),
     );
   }
+
+  logger.error({
+    event: "http.unexpected_error",
+    method: request.method,
+    path: sanitizeRequestPath(request),
+    ...getErrorLogFields(error),
+  });
 
   set.status = 500;
   return toErrorEnvelope(

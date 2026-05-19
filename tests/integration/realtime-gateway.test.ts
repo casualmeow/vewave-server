@@ -57,6 +57,42 @@ describe("realtime gateway", () => {
 
     await services.realtime.open(hostSocket as never);
     await services.realtime.open(viewerSocket as never);
+
+    const snapshot = hostSocket.messages.find(
+      (event) => event.type === "room.snapshot",
+    );
+    const joined = hostSocket.messages.find(
+      (event) => event.type === "presence.member.joined",
+    );
+
+    expect(snapshot?.payload).toMatchObject({
+      presence: {
+        members: [
+          {
+            connectionId: hostSocket.id,
+            name: "Host",
+            role: "owner",
+          },
+        ],
+      },
+    });
+    expect(joined?.payload).toMatchObject({
+      member: {
+        connectionId: hostSocket.id,
+        name: "Host",
+        role: "owner",
+      },
+      members: [
+        {
+          connectionId: hostSocket.id,
+        },
+      ],
+    });
+    expect(
+      "roomId" in
+        ((joined?.payload as { member?: Record<string, unknown> }).member ?? {}),
+    ).toBe(false);
+
     await services.realtime.message(
       hostSocket as never,
       JSON.stringify({
@@ -111,6 +147,38 @@ describe("realtime gateway", () => {
 
     expect(rejected?.payload).toMatchObject({
       code: "PLAYBACK_COMMAND_FORBIDDEN",
+      message: "Only the room host can control playback.",
+    });
+  });
+
+  test("left events include remaining canonical member list", async () => {
+    const host = await createUserSession("host@example.com", "Host");
+    const viewer = await createUserSession("viewer@example.com", "Viewer");
+    const created = await services.rooms.createRoom(
+      { url: "https://vimeo.com/123456789" },
+      host.user,
+    );
+    const hostSocket = createSocket(created.room.code, host.accessToken);
+    const viewerSocket = createSocket(created.room.code, viewer.accessToken);
+
+    await services.realtime.open(hostSocket as never);
+    await services.realtime.open(viewerSocket as never);
+    await services.realtime.close(viewerSocket as never);
+
+    const left = hostSocket.messages.find(
+      (event) => event.type === "presence.member.left",
+    );
+
+    expect(left?.payload).toMatchObject({
+      connectionId: viewerSocket.id,
+      userId: viewer.user.id,
+      members: [
+        {
+          connectionId: hostSocket.id,
+          userId: host.user.id,
+          name: "Host",
+        },
+      ],
     });
   });
 

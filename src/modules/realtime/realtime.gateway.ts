@@ -54,6 +54,16 @@ export class RealtimeGateway {
         user,
         send: (event) => sendEvent(ws, event),
       });
+      const members = this.transport.getConnectedMembers(roomCode);
+      const member = members.find((item) => item.connectionId === ws.id);
+
+      if (!member) {
+        throw new AppError(
+          "INTERNAL_SERVER_ERROR",
+          "Realtime presence registration failed.",
+          500,
+        );
+      }
 
       this.transport.publishToMember(
         ws.id,
@@ -63,7 +73,7 @@ export class RealtimeGateway {
           payload: {
             ...connection.snapshot,
             presence: {
-              members: this.transport.getConnectedMembers(roomCode),
+              members,
             },
           },
         }),
@@ -75,10 +85,8 @@ export class RealtimeGateway {
           type: "presence.member.joined",
           roomCode,
           payload: {
-            member: this.transport
-              .getConnectedMembers(roomCode)
-              .find((member) => member.connectionId === ws.id),
-            members: this.transport.getConnectedMembers(roomCode),
+            member,
+            members,
           },
         }),
       );

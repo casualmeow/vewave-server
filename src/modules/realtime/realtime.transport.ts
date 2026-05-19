@@ -4,16 +4,16 @@ import type { ServerRoomEvent } from "./realtime.schemas";
 
 export type ConnectedRoomMember = {
   connectionId: string;
-  roomCode: string;
-  roomId: string;
   memberId: string | null;
   userId: string | null;
   name: string;
   role: RoomRole;
-  connectedAt: string;
 };
 
 export type RoomConnection = ConnectedRoomMember & {
+  roomCode: string;
+  roomId: string;
+  connectedAt: string;
   user: PublicUser | null;
   send(event: ServerRoomEvent): void;
 };
@@ -84,6 +84,15 @@ export class LocalRoomRealtimeTransport implements RoomRealtimeTransport {
     return Array.from(roomSet)
       .map((connectionId) => this.connections.get(connectionId))
       .filter((connection): connection is RoomConnection => Boolean(connection))
-      .map(({ send: _send, user: _user, ...member }) => member);
+      .map(
+        ({
+          send: _send,
+          user: _user,
+          roomCode: _roomCode,
+          roomId: _roomId,
+          connectedAt: _connectedAt,
+          ...member
+        }) => member,
+      );
   }
 }

@@ -88,6 +88,38 @@ describe("Vewave API", () => {
     expect(typeof (await loginResponse.json()).accessToken).toBe("string");
   });
 
+  test("auth failures return controlled 401 responses", async () => {
+    await register();
+
+    const invalidLoginResponse = await app.handle(
+      jsonRequest("/api/auth/login", {
+        method: "POST",
+        body: {
+          email: "jane@example.com",
+          password: "wrong-password",
+        },
+      }),
+    );
+    expect(invalidLoginResponse.status).toBe(401);
+    expect((await invalidLoginResponse.json()).error.code).toBe(
+      "AUTH_INVALID_CREDENTIALS",
+    );
+
+    const meResponse = await app.handle(
+      jsonRequest("/api/auth/me", { token: "invalid-access-token" }),
+    );
+    expect(meResponse.status).toBe(401);
+    expect((await meResponse.json()).error.code).toBe("AUTH_UNAUTHORIZED");
+
+    const refreshResponse = await app.handle(
+      jsonRequest("/api/auth/refresh", { method: "POST" }),
+    );
+    expect(refreshResponse.status).toBe(401);
+    expect((await refreshResponse.json()).error.code).toBe(
+      "AUTH_REFRESH_EXPIRED",
+    );
+  });
+
   test("refresh rotates session and logout revokes the refresh cookie", async () => {
     const registered = await register();
 

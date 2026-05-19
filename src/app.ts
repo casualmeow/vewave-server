@@ -3,7 +3,7 @@ import { openapi } from "@elysia/openapi";
 import { Elysia } from "elysia";
 import { loadEnv, type AppEnv } from "./config/env";
 import { createAuthRoutes } from "./modules/auth/auth.routes";
-import { healthRoutes } from "./modules/health/routes";
+import { createHealthRoutes } from "./modules/health/routes";
 import { createMediaRoutes } from "./modules/media/media.routes";
 import { createRealtimeRoutes } from "./modules/realtime/realtime.routes";
 import { createRoomsRoutes } from "./modules/rooms/rooms.routes";
@@ -57,7 +57,7 @@ export const createApp = (dependencies?: Partial<AppDependencies>) => {
       }),
     )
     .onError(handleHttpError)
-    .use(healthRoutes)
+    .use(createHealthRoutes(env))
     .use(createAuthRoutes(services.auth, env))
     .use(createMediaRoutes(services.media))
     .use(createRoomsRoutes(services.rooms, services.auth))

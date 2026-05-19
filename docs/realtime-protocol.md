@@ -86,6 +86,18 @@ All server messages use this envelope:
 
 Sent to a connection after it joins a room.
 
+Presence members use this public shape:
+
+```ts
+type RealtimePresenceMember = {
+  connectionId: string
+  memberId: string | null
+  userId: string | null
+  name: string
+  role: 'owner' | 'host' | 'viewer' | string
+}
+```
+
 ```json
 {
   "type": "room.snapshot",
@@ -121,7 +133,15 @@ Sent to a connection after it joins a room.
       "canControlPlayback": true
     },
     "presence": {
-      "members": []
+      "members": [
+        {
+          "connectionId": "connection-uuid",
+          "memberId": "member-uuid",
+          "userId": "user-uuid",
+          "name": "Jane Doe",
+          "role": "owner"
+        }
+      ]
     }
   }
 }
@@ -131,10 +151,45 @@ Sent to a connection after it joins a room.
 
 - `room.pong`: response to `room.ping`.
 - `presence.member.joined`: broadcast when a connection joins.
-- `presence.member.left`: broadcast when a connection leaves.
 - `playback.state`: canonical playback state after an accepted command.
 - `command.rejected`: validation, auth, or permission failure for a command.
 - `error`: connection-level or unexpected realtime error.
+
+`presence.member.joined` payload:
+
+```json
+{
+  "member": {
+    "connectionId": "connection-uuid",
+    "memberId": "member-uuid",
+    "userId": "user-uuid",
+    "name": "Jane Doe",
+    "role": "viewer"
+  },
+  "members": []
+}
+```
+
+`presence.member.left` payload:
+
+```json
+{
+  "connectionId": "connection-uuid",
+  "memberId": "member-uuid",
+  "userId": "user-uuid",
+  "members": []
+}
+```
+
+`command.rejected` payload:
+
+```json
+{
+  "code": "PLAYBACK_COMMAND_FORBIDDEN",
+  "message": "Only the room host can control playback.",
+  "details": {}
+}
+```
 
 ## Synchronization Rules
 

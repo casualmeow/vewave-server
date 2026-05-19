@@ -92,7 +92,7 @@ export const loadEnv = (source: EnvSource = Bun.env): AppEnv => {
   return {
     nodeEnv,
     isProduction,
-    apiHost: source.API_HOST ?? "0.0.0.0",
+    apiHost: source.API_HOST ?? "localhost",
     apiPort: parsePort(source.API_PORT),
     clientOrigins: parseOrigins(source.CLIENT_ORIGIN),
     databaseUrl,

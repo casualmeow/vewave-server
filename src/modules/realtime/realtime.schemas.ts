@@ -1,4 +1,6 @@
 import { AppError } from "../../shared/errors/app-error";
+import type { ConnectedRoomMember } from "./realtime.transport";
+import type { RoomSnapshotResponse } from "../rooms/rooms.service";
 import type { PlaybackCommand } from "../rooms/rooms.types";
 
 export type ClientRoomEvent =
@@ -18,15 +20,89 @@ export type ClientRoomEvent =
       payload: { playbackRate: number; positionMs?: number };
     };
 
-export type ServerRoomEvent = {
-  type:
-    | "room.snapshot"
-    | "room.pong"
-    | "presence.member.joined"
-    | "presence.member.left"
-    | "playback.state"
-    | "command.rejected"
-    | "error";
+export type RealtimeErrorPayload = {
+  code?: string;
+  message: string;
+  details?: unknown;
+};
+
+export type RoomSnapshotEventPayload = RoomSnapshotResponse & {
+  presence: {
+    members: ConnectedRoomMember[];
+  };
+};
+
+export type PresenceJoinedEventPayload = {
+  member: ConnectedRoomMember;
+  members: ConnectedRoomMember[];
+};
+
+export type PresenceLeftEventPayload = {
+  connectionId: string;
+  memberId: string | null;
+  userId: string | null;
+  members: ConnectedRoomMember[];
+};
+
+export type ServerRoomEvent =
+  | {
+      type: "room.snapshot";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: RoomSnapshotEventPayload;
+    }
+  | {
+      type: "room.pong";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: { serverTimeMs: number };
+    }
+  | {
+      type: "presence.member.joined";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: PresenceJoinedEventPayload;
+    }
+  | {
+      type: "presence.member.left";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: PresenceLeftEventPayload;
+    }
+  | {
+      type: "playback.state";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: RoomSnapshotResponse["playback"];
+    }
+  | {
+      type: "command.rejected";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: RealtimeErrorPayload;
+    }
+  | {
+      type: "error";
+      eventId: string;
+      roomCode: string;
+      requestId?: string;
+      payload: RealtimeErrorPayload;
+    };
+
+type ServerRoomEventInput = {
+  [Event in ServerRoomEvent as Event["type"]]: Omit<Event, "eventId">;
+}[ServerRoomEvent["type"]];
+
+export type ServerRoomEventType = ServerRoomEvent["type"];
+
+type ServerRoomEventBase = {
+  type: ServerRoomEventType;
   eventId: string;
   roomCode: string;
   requestId?: string;
@@ -147,8 +223,9 @@ export const parseClientRoomEvent = (message: unknown): ClientRoomEvent => {
 };
 
 export const createServerEvent = (
-  input: Omit<ServerRoomEvent, "eventId">,
-): ServerRoomEvent => ({
+  input: ServerRoomEventInput,
+): ServerRoomEvent =>
+  ({
   eventId: crypto.randomUUID(),
   ...input,
-});
+}) as ServerRoomEvent;

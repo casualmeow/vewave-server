@@ -246,3 +246,7 @@ export class RoomsService {
     return "playback_rate_changed";
   }
 }
+
+export type RoomSnapshotResponse = Awaited<
+  ReturnType<RoomsService["getRoomSnapshot"]>
+>;
