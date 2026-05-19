@@ -1,7 +1,12 @@
-import { Elysia } from "elysia";
+import { createApp } from "./app";
+import { loadEnv } from "./config/env";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+const env = loadEnv();
+const app = createApp({ env }).listen({
+  hostname: env.apiHost,
+  port: env.apiPort,
+});
 
 console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+  `Vewave API is running at http://${app.server?.hostname}:${app.server?.port}`,
 );

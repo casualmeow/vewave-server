@@ -1,15 +1,27 @@
 {
-  "name": "app",
+  "name": "vewave-server",
   "version": "1.0.50",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outdir=dist",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:dev": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
-    "elysia": "latest"
+    "@elysia/cors": "^1.4.2",
+    "@elysia/openapi": "^1.4.15",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "latest",
+    "jose": "^6.2.3",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^6.0.3"
   },
   "module": "src/index.js"
 }
